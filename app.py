@@ -32,6 +32,19 @@ def login_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
+# -------------------------  
+# global login requirement
+# -------------------------
+@app.before_request
+def require_login():
+    # allow access to login and static files only
+    if request.endpoint in ['login', 'static'] or request.path.startswith('/static/'):
+        return
+    # require login for all other routes, including logout
+    if not session.get("user"):
+        flash("Please login to continue.", "danger")
+        return redirect(url_for("login", next=request.path))
+
 # -------------------------
 # initialize DBs & tables
 # -------------------------
@@ -53,14 +66,20 @@ def init_db():
                 address TEXT,
                 age INTEGER,
                 disease TEXT,
-                dob TEXT
+                dob TEXT,
+                email TEXT
             )
         """)
+        # Add email column if it doesn't exist
+        try:
+            cur.execute("ALTER TABLE patient ADD COLUMN email TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
         cur.execute("SELECT COUNT(*) FROM patient")
         if cur.fetchone()[0] == 0:
-            cur.execute("""INSERT INTO patient (name,gender,phone,address,age,disease,dob)
-                           VALUES (?,?,?,?,?,?,?)""",
-                        ("Demo Patient","M","+91-9000000000","Demo Address",30,"General","1995-01-01"))
+            cur.execute("""INSERT INTO patient (name,gender,phone,address,age,disease,dob,email)
+                           VALUES (?,?,?,?,?,?,?,?)""",
+                        ("Demo Patient","M","+91-9000000000","Demo Address",30,"General","1995-01-01","demo.patient@example.com"))
         conn.commit()
 
     # doctors and slots
@@ -75,9 +94,15 @@ def init_db():
                 specialization TEXT,
                 age INTEGER,
                 date_of_joining TEXT,
-                hospital_id TEXT UNIQUE
+                hospital_id TEXT UNIQUE,
+                email TEXT
             )
         """)
+        # Add email column if it doesn't exist
+        try:
+            cur.execute("ALTER TABLE doctor ADD COLUMN email TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
         cur.execute("""
             CREATE TABLE IF NOT EXISTS slot (
                 slot_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,12 +116,12 @@ def init_db():
         """)
         cur.execute("SELECT COUNT(*) FROM doctor")
         if cur.fetchone()[0] == 0:
-            cur.execute("""INSERT INTO doctor (name,gender,phone,specialization,age,date_of_joining,hospital_id)
-                           VALUES (?,?,?,?,?,?,?)""",
-                        ("Dr. Reddy","M","+91-9000000001","General Physician",45,"2015-06-01","FPCH-001"))
-            cur.execute("""INSERT INTO doctor (name,gender,phone,specialization,age,date_of_joining,hospital_id)
-                           VALUES (?,?,?,?,?,?,?)""",
-                        ("Dr. Meera","F","+91-9000000002","Dermatologist",39,"2018-09-12","FPCH-002"))
+            cur.execute("""INSERT INTO doctor (name,gender,phone,specialization,age,date_of_joining,hospital_id,email)
+                           VALUES (?,?,?,?,?,?,?,?)""",
+                        ("Dr. Reddy","M","+91-9000000001","General Physician",45,"2015-06-01","FPCH-001","dr.reddy@example.com"))
+            cur.execute("""INSERT INTO doctor (name,gender,phone,specialization,age,date_of_joining,hospital_id,email)
+                           VALUES (?,?,?,?,?,?,?,?)""",
+                        ("Dr. Meera","F","+91-9000000002","Dermatologist",39,"2018-09-12","FPCH-002","dr.meera@example.com"))
         conn.commit()
 
     # appointments and users
@@ -196,7 +221,7 @@ def dashboard():
 def doctors():
     with sqlite3.connect(DOCTOR_DB) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT doctor_id,name,gender,phone,specialization,age,date_of_joining,hospital_id FROM doctor ORDER BY name")
+        cur.execute("SELECT doctor_id,name,gender,phone,specialization,age,date_of_joining,hospital_id,email FROM doctor ORDER BY name")
         doctors = cur.fetchall()
     return render_template("doctors.html", hospital_name=HOSPITAL_NAME, doctors=doctors, user=session.get("user"))
 
@@ -211,13 +236,14 @@ def add_doctor():
         age = request.form.get("age") or None
         doj = request.form.get("date_of_joining")
         hid = request.form.get("hospital_id", "").strip()
+        email = request.form.get("email")
         if not name or not hid:
             flash("Name and Hospital ID are required.", "danger")
             return redirect(url_for("add_doctor"))
         with sqlite3.connect(DOCTOR_DB) as conn:
             cur = conn.cursor()
-            cur.execute("""INSERT INTO doctor (name,gender,phone,specialization,age,date_of_joining,hospital_id)
-                           VALUES (?,?,?,?,?,?,?)""", (name,gender,phone,specialization,age,doj,hid))
+            cur.execute("""INSERT INTO doctor (name,gender,phone,specialization,age,date_of_joining,hospital_id,email)
+                           VALUES (?,?,?,?,?,?,?,?)""", (name,gender,phone,specialization,age,doj,hid,email))
             conn.commit()
         flash("Doctor added.", "success")
         return redirect(url_for("doctors"))
@@ -236,12 +262,13 @@ def edit_doctor(doctor_id):
             age = request.form.get("age") or None
             doj = request.form.get("date_of_joining")
             hid = request.form.get("hospital_id", "").strip()
-            cur.execute("""UPDATE doctor SET name=?, gender=?, phone=?, specialization=?, age=?, date_of_joining=?, hospital_id=? WHERE doctor_id=?""",
-                        (name,gender,phone,specialization,age,doj,hid,doctor_id))
+            email = request.form.get("email")
+            cur.execute("""UPDATE doctor SET name=?, gender=?, phone=?, specialization=?, age=?, date_of_joining=?, hospital_id=?, email=? WHERE doctor_id=?""",
+                        (name,gender,phone,specialization,age,doj,hid,email,doctor_id))
             conn.commit()
             flash("Doctor updated.", "success")
             return redirect(url_for("doctors"))
-        cur.execute("SELECT doctor_id,name,gender,phone,specialization,age,date_of_joining,hospital_id FROM doctor WHERE doctor_id = ?", (doctor_id,))
+        cur.execute("SELECT doctor_id,name,gender,phone,specialization,age,date_of_joining,hospital_id,email FROM doctor WHERE doctor_id = ?", (doctor_id,))
         doc = cur.fetchone()
         # fetch slots for display (optional)
         cur.execute("SELECT slot_id,slot_date,start_time,end_time,is_available FROM slot WHERE doctor_id = ? ORDER BY slot_date,start_time", (doctor_id,))
@@ -267,7 +294,7 @@ def delete_doctor(doctor_id):
 def patients():
     with sqlite3.connect(PATIENT_DB) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT patient_id,name,gender,phone,address,age,disease,dob FROM patient ORDER BY name")
+        cur.execute("SELECT patient_id,name,gender,phone,address,age,disease,dob,email FROM patient ORDER BY name")
         patients = cur.fetchall()
     return render_template("patients.html", hospital_name=HOSPITAL_NAME, patients=patients, user=session.get("user"))
 
@@ -282,13 +309,14 @@ def add_patient():
         age = request.form.get("age") or None
         disease = request.form.get("disease")
         dob = request.form.get("dob")
+        email = request.form.get("email")
         if not name:
             flash("Name required.", "danger")
             return redirect(url_for("add_patient"))
         with sqlite3.connect(PATIENT_DB) as conn:
             cur = conn.cursor()
-            cur.execute("""INSERT INTO patient (name,gender,phone,address,age,disease,dob)
-                           VALUES (?,?,?,?,?,?,?)""", (name,gender,phone,address,age,disease,dob))
+            cur.execute("""INSERT INTO patient (name,gender,phone,address,age,disease,dob,email)
+                           VALUES (?,?,?,?,?,?,?,?)""", (name,gender,phone,address,age,disease,dob,email))
             conn.commit()
         flash("Patient added.", "success")
         return redirect(url_for("patients"))
@@ -307,12 +335,13 @@ def edit_patient(patient_id):
             age = request.form.get("age") or None
             disease = request.form.get("disease")
             dob = request.form.get("dob")
-            cur.execute("""UPDATE patient SET name=?,gender=?,phone=?,address=?,age=?,disease=?,dob=? WHERE patient_id=?""",
-                        (name,gender,phone,address,age,disease,dob,patient_id))
+            email = request.form.get("email")
+            cur.execute("""UPDATE patient SET name=?,gender=?,phone=?,address=?,age=?,disease=?,dob=?,email=? WHERE patient_id=?""",
+                        (name,gender,phone,address,age,disease,dob,email,patient_id))
             conn.commit()
             flash("Patient updated.", "success")
             return redirect(url_for("patients"))
-        cur.execute("SELECT patient_id,name,gender,phone,address,age,disease,dob FROM patient WHERE patient_id = ?", (patient_id,))
+        cur.execute("SELECT patient_id,name,gender,phone,address,age,disease,dob,email FROM patient WHERE patient_id = ?", (patient_id,))
         p = cur.fetchone()
     return render_template("edit_patient.html", hospital_name=HOSPITAL_NAME, patient=p, user=session.get("user"))
 
@@ -618,6 +647,7 @@ def edit_booking(appt_id):
 # debug helper (show registered routes + templates)
 # -------------------------
 @app.route("/debug_routes_full")
+@login_required
 def debug_routes_full():
     out = []
     out.append("<h3>Registered routes</h3><ul>")
