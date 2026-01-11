@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card-pro" style="max-width:820px;">
+  <h4 style="color:var(--brand)">{{ 'Edit Doctor' if doctor else 'Add Doctor' }}</h4>
+  <form method="post" class="mt-3">
+    <div class="row g-2">
+      <div class="col-md-6"><input name="name" class="form-control" placeholder="Full name" value="{{ doctor[1] if doctor else '' }}" required></div>
+      <div class="col-md-3">
+        <select name="gender" class="form-select">
+          <option value="">Gender</option>
+          <option value="M" {% if doctor and doctor[2]=='M' %}selected{% endif %}>Male</option>
+          <option value="F" {% if doctor and doctor[2]=='F' %}selected{% endif %}>Female</option>
+          <option value="O" {% if doctor and doctor[2]=='O' %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+      <div class="col-md-3"><input name="phone" class="form-control" placeholder="Phone" value="{{ doctor[3] if doctor else '' }}"></div>
+
+      <div class="col-md-6"><input name="specialization" class="form-control" placeholder="Specialization" value="{{ doctor[4] if doctor else '' }}"></div>
+      <div class="col-md-3"><input name="age" class="form-control" placeholder="Age" value="{{ doctor[5] if doctor else '' }}"></div>
+      <div class="col-md-3"><input name="date_of_joining" type="date" class="form-control" value="{{ doctor[6] if doctor else '' }}"></div>
+
+      <div class="col-md-6"><input name="hospital_id" class="form-control" placeholder="Hospital ID (FPCH-...)" value="{{ doctor[7] if doctor else '' }}" required></div>
+    </div>
+
+    <div class="mt-3">
+      <button class="btn btn-brand">{{ 'Save' if doctor else 'Create' }}</button>
+      <a class="btn btn-outline-secondary ms-2" href="{{ url_for('doctors') }}">Cancel</a>
+    </div>
+  </form>
+
+  {% if doctor %}
+  <hr>
+  <h6>Manage slots for {{ doctor[1] }}</h6>
+  <form method="post" action="{{ url_for('add_slot') }}" class="row g-2">
+    <input type="hidden" name="doctor_id" value="{{ doctor[0] }}">
+    <div class="col-md-3"><input name="slot_date" type="date" class="form-control" required></div>
+    <div class="col-md-3"><input name="start_time" type="time" class="form-control" required></div>
+    <div class="col-md-3"><input name="end_time" type="time" class="form-control" required></div>
+    <div class="col-md-3"><button class="btn btn-brand w-100">Add Slot</button></div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

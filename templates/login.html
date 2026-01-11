@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card-pro" style="width:420px; margin-top:30px;">
+    <h5 style="color:var(--brand)">Sign in to {{ hospital_name }}</h5>
+    <p class="muted small">Enter your admin credentials.</p>
+    <form method="post" class="mt-3">
+      <div class="mb-2">
+        <input name="username" class="form-control" placeholder="Username" required>
+      </div>
+      <div class="mb-3">
+        <input name="password" type="password" class="form-control" placeholder="Password" required>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-brand w-100" type="submit"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+      </div>
+      <p></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

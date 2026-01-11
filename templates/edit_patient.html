@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card-pro" style="max-width:820px;">
+  <h4 style="color:var(--brand)">{{ 'Edit Patient' if patient else 'Add Patient' }}</h4>
+  <form method="post" class="mt-3">
+    <div class="row g-2">
+      <div class="col-md-6"><input name="name" class="form-control" placeholder="Full name" value="{{ patient[1] if patient else '' }}" required></div>
+      <div class="col-md-3">
+        <select name="gender" class="form-select">
+          <option value="">Gender</option>
+          <option value="M" {% if patient and patient[2]=='M' %}selected{% endif %}>Male</option>
+          <option value="F" {% if patient and patient[2]=='F' %}selected{% endif %}>Female</option>
+          <option value="O" {% if patient and patient[2]=='O' %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+      <div class="col-md-3"><input name="phone" class="form-control" placeholder="Phone" value="{{ patient[3] if patient else '' }}"></div>
+
+      <div class="col-md-6"><input name="address" class="form-control" placeholder="Address" value="{{ patient[4] if patient else '' }}"></div>
+      <div class="col-md-3"><input name="age" class="form-control" placeholder="Age" value="{{ patient[5] if patient else '' }}"></div>
+      <div class="col-md-3"><input name="dob" type="date" class="form-control" value="{{ patient[7] if patient else '' }}"></div>
+
+      <div class="col-12"><input name="disease" class="form-control" placeholder="Disease" value="{{ patient[6] if patient else '' }}"></div>
+    </div>
+
+    <div class="mt-3">
+      <button class="btn btn-brand">{{ 'Save' if patient else 'Create' }}</button>
+      <a class="btn btn-outline-secondary ms-2" href="{{ url_for('patients') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 style="color:var(--brand)">New Booking</h4>
+  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('appointments') }}">View Appointments</a>
+</div>
+
+<div class="card-pro">
+  <form method="post" id="bookingForm">
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="muted small">Patient</label>
+        <select name="patient_id" class="form-select" required>
+          <option value="">Select patient</option>
+          {% for p in patients %}<option value="{{ p[0] }}">{{ p[1] }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="muted small">Doctor</label>
+        <select id="doctorSelect" name="doctor_id" class="form-select" required>
+          <option value="">Select doctor</option>
+          {% for d in doctors %}<option value="{{ d[0] }}">{{ d[1] }} — {{ d[2] }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="muted small">Date</label>
+        <input id="slotDate" name="slot_date" type="date" class="form-control" required>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <h6 class="muted">Available Slots</h6>
+      <div id="slotsArea" class="row g-2 mt-2"></div>
+    </div>
+
+    <input type="hidden" name="slot_id" id="chosenSlot">
+    <div class="mt-3">
+      <button class="btn btn-brand" type="submit"><i class="bi bi-check-circle"></i> Confirm Booking</button>
+      <a class="btn btn-outline-secondary ms-2" href="{{ url_for('dashboard') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const doctorSelect = document.getElementById('doctorSelect');
+  const slotDate = document.getElementById('slotDate');
+  const slotsArea = document.getElementById('slotsArea');
+  const chosenSlot = document.getElementById('chosenSlot');
+
+  async function loadSlots(){
+    slotsArea.innerHTML = '<div class="muted">Loading slots…</div>';
+    const did = doctorSelect.value;
+    const dt = slotDate.value;
+    if(!did || !dt){ slotsArea.innerHTML = '<div class="muted">Select doctor and date to see slots.</div>'; return; }
+    const resp = await fetch(`/api/slots?doctor_id=${did}&slot_date=${dt}`);
+    const slots = await resp.json();
+    if(!slots.length){ slotsArea.innerHTML = '<div class="muted">No slots for this date. Add slots from Doctors → Edit.</div>'; return; }
+    slotsArea.innerHTML = '';
+    slots.forEach(s => {
+      const col = document.createElement('div'); col.className='col-md-3';
+      const btn = document.createElement('button');
+      btn.type='button';
+      btn.className='btn btn-outline-secondary w-100';
+      btn.style.padding='10px';
+      btn.innerHTML = s.start_time + ' — ' + s.end_time;
+      if(!s.is_available){ btn.classList.add('disabled'); btn.innerHTML += ' (Taken)'; }
+      btn.onclick = () => {
+        if(!s.is_available) return;
+        document.querySelectorAll('.slot-selected').forEach(x=>x.classList.remove('slot-selected'));
+        btn.classList.add('slot-selected');
+        chosenSlot.value = s.slot_id;
+        btn.classList.add('btn-brand');
+      };
+      col.appendChild(btn); slotsArea.appendChild(col);
+    });
+  }
+
+  doctorSelect.addEventListener('change', loadSlots);
+  slotDate.addEventListener('change', loadSlots);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="card-pro mb-3">
+      <div class="d-flex justify-content-between">
+        <div>
+          <h5 style="margin:0;color:var(--brand)">Welcome to {{ hospital_name }}</h5>
+          <p class="muted mb-0">Admin dashboard</p>
+        </div>
+        <div>
+          <a class="btn btn-sm btn-brand" href="{{ url_for('booking') }}">New Appointment</a>
+        </div>
+      </div>
+
+      <div class="row mt-4 g-3">
+        <div class="col-sm-4">
+          <div class="card-pro text-center">
+            <div class="muted">Doctors</div>
+            <div style="font-size:1.6rem;font-weight:700">{{ stats.doctors }}</div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card-pro text-center">
+            <div class="muted">Patients</div>
+            <div style="font-size:1.6rem;font-weight:700">{{ stats.patients }}</div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="card-pro text-center">
+            <div class="muted">Appointments</div>
+            <div style="font-size:1.6rem;font-weight:700">{{ stats.appointments }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card-pro">
+      <h6 style="color:var(--brand)">Quick Actions</h6>
+      <div class="d-grid gap-2 mt-3">
+        <a class="btn btn-brand" href="{{ url_for('doctors') }}"><i class="bi bi-person-badge"></i> Manage Doctors</a>
+        <a class="btn btn-brand" href="{{ url_for('patients') }}"><i class="bi bi-people"></i> Manage Patients</a>
+        <a class="btn btn-brand" href="{{ url_for('booking') }}"><i class="bi bi-calendar-plus"></i> New Booking</a>
+        <a class="btn btn-brand" href="{{ url_for('appointments') }}"><i class="bi bi-card-checklist"></i> View Appointments</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

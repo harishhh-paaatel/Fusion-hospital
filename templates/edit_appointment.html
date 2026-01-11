@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card-pro" style="max-width:720px;">
+  <h4 style="color:var(--brand)">Edit Appointment</h4>
+  <form method="post" class="mt-3">
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="muted small">Patient</label>
+        <select name="patient_id" class="form-select">
+          {% for p in patients %}<option value="{{ p[0] }}" {% if appt and appt[1]==p[0] %}selected{% endif %}>{{ p[1] }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="muted small">Doctor</label>
+        <select name="doctor_id" class="form-select">
+          {% for d in doctors %}<option value="{{ d[0] }}" {% if appt and appt[2]==d[0] %}selected{% endif %}>{{ d[1] }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="muted small">Date</label>
+        <input name="appt_date" type="date" class="form-control" value="{{ appt[4] if appt else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="muted small">Time</label>
+        <input name="appt_time" type="time" class="form-control" value="{{ appt[5] if appt else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="muted small">Status</label>
+        <select name="status" class="form-select">
+          <option value="CONFIRMED" {% if appt and appt[6]=='CONFIRMED' %}selected{% endif %}>CONFIRMED</option>
+          <option value="PENDING" {% if appt and appt[6]=='PENDING' %}selected{% endif %}>PENDING</option>
+          <option value="CANCELLED" {% if appt and appt[6]=='CANCELLED' %}selected{% endif %}>CANCELLED</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <button class="btn btn-brand">Save</button>
+      <a class="btn btn-outline-secondary ms-2" href="{{ url_for('appointments') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
