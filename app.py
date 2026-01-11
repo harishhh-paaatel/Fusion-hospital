@@ -8,9 +8,10 @@ import os
 import sqlite3
 import functools
 from datetime import datetime
+import secrets
 
 app = Flask(__name__)
-app.secret_key = "fusion-prime-care-secret-change-this"  # change for production
+app.secret_key = secrets.token_hex(32)  # Generate new secret key each run
 
 # DB file paths
 DATA_DIR = "."
