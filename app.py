@@ -38,9 +38,9 @@ def login_required(fn):
 @app.before_request
 def require_login():
     # allow access to login and static files only
-    if request.endpoint in ['login', 'static'] or request.path.startswith('/static/'):
+    if request.endpoint == 'login' or request.path.startswith('/static/'):
         return
-    # require login for all other routes, including logout
+    # require login for ALL other routes
     if not session.get("user"):
         flash("Please login to continue.", "danger")
         return redirect(url_for("login", next=request.path))
